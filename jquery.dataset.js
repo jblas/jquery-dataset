@@ -822,8 +822,6 @@ $.extend(DataSet.prototype, Notifier.prototype, {
 	},
 });
 
-$.data.dataset = DataSet;
-
 ////////// Utilities //////////
 
 function escapeQuotesAndLineBreaks(str)
@@ -876,5 +874,24 @@ function decodeEntities(str)
 	return str;
 }
 
-//////////////////////////
+////////// Namespace Setup //////////
+
+$.dataset.plugins = $.extend({ base: DataSet }, {
+	create: function()
+	{
+		var args = $.makeArray(arguments);
+		var dsType = (typeof args[0] == "string") ? args.shift() : "base";
+		var p = $.dataset.plugins[dsType];
+		return p ? new p.apply(args) : null;
+	},
+	
+	destroy: function(ds)
+	{
+		if (ds && typeof ds.destroy == "function") {
+			ds.destroy();
+		}
+	}
+});
+
+
 })(jQuery,window,document);
