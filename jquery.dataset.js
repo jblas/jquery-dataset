@@ -441,7 +441,7 @@ $.extend(DataSet.prototype, Notifier.prototype, {
 						if (ctype == "number")
 							row[cname] = new Number(val);
 						else if (ctype == "html")
-							row[cname] = decodeEntities(val);
+							row[cname] = $.dataset.decodeEntities(val);
 					}
 				}
 			}
@@ -822,61 +822,21 @@ $.extend(DataSet.prototype, Notifier.prototype, {
 	},
 });
 
-////////// Utilities //////////
+////////// $.dataset Namespace Setup //////////
 
-function escapeQuotesAndLineBreaks(str)
-{
-	if (str)
-	{
-		str = str.replace(/\\/g, "\\\\");
-		str = str.replace(/["']/g, "\\$&");
-		str = str.replace(/\n/g, "\\n");
-		str = str.replace(/\r/g, "\\r");
-	}
-	return str;
-}
+$.dataset = $.extend({}, {
+	// Developers can add to the list of supported data sets by inserting
+	// their data set into the plugins dictionary.
 
-function encodeEntities(str)
-{
-	if (str && str.search(/[&<>"]/) != -1)
-	{
-		str = str.replace(/&/g, "&amp;");
-		str = str.replace(/</g, "&lt;");
-		str = str.replace(/>/g, "&gt;");
-		str = str.replace(/"/g, "&quot;");
-	}
-	return str
-}
+	plugins: { base: DataSet },
 
-function decodeEntities(str)
-{
-	var d = decodeEntities.div;
-	if (!d)
-	{
-		d = document.createElement('div');
-		decodeEntities.div = d;
-		if (!d) return str;
-	}
-	d.innerHTML = str;
-	if (d.childNodes.length == 1 && d.firstChild.nodeType == 3 /* Node.TEXT_NODE */ && d.firstChild.nextSibling == null)
-		str = d.firstChild.data;
-	else
-	{
-		// Hmmm, innerHTML processing of str produced content
-		// we weren't expecting, so just replace entities we
-		// expect folks will use in node attributes that contain
-		// JavaScript.
-		str = str.replace(/&lt;/gi, "<");
-		str = str.replace(/&gt;/gi, ">");
-		str = str.replace(/&quot;/gi, "\"");
-		str = str.replace(/&amp;/gi, "&");
-	}
-	return str;
-}
+	// Expose the internal classes from this plugin so that folks can extend
+	// with their own data sets.
+	
+	DataSet: DataSet,
 
-////////// Namespace Setup //////////
+	// Data sets are created and destroyed using $.dataset.create() and $.dataset.destroy().
 
-$.dataset.plugins = $.extend({ base: DataSet }, {
 	create: function()
 	{
 		var args = $.makeArray(arguments);
@@ -890,8 +850,59 @@ $.dataset.plugins = $.extend({ base: DataSet }, {
 		if (ds && typeof ds.destroy == "function") {
 			ds.destroy();
 		}
+	},
+
+	// Utilities shared by all data set plugins.
+
+	escapeQuotesAndLineBreaks: function(str)
+	{
+		if (str)
+		{
+			str = str.replace(/\\/g, "\\\\");
+			str = str.replace(/["']/g, "\\$&");
+			str = str.replace(/\n/g, "\\n");
+			str = str.replace(/\r/g, "\\r");
+		}
+		return str;
+	},
+	
+	encodeEntities: function(str)
+	{
+		if (str && str.search(/[&<>"]/) != -1)
+		{
+			str = str.replace(/&/g, "&amp;");
+			str = str.replace(/</g, "&lt;");
+			str = str.replace(/>/g, "&gt;");
+			str = str.replace(/"/g, "&quot;");
+		}
+		return str
+	},
+	
+	decodeEntities: function(str)
+	{
+		var d = $.dataset.decodeEntities.div;
+		if (!d)
+		{
+			d = document.createElement('div');
+			$.dataset.decodeEntities.div = d;
+			if (!d) return str;
+		}
+		d.innerHTML = str;
+		if (d.childNodes.length == 1 && d.firstChild.nodeType == 3 /* Node.TEXT_NODE */ && d.firstChild.nextSibling == null)
+			str = d.firstChild.data;
+		else
+		{
+			// Hmmm, innerHTML processing of str produced content
+			// we weren't expecting, so just replace entities we
+			// expect folks will use in node attributes that contain
+			// JavaScript.
+			str = str.replace(/&lt;/gi, "<");
+			str = str.replace(/&gt;/gi, ">");
+			str = str.replace(/&quot;/gi, "\"");
+			str = str.replace(/&amp;/gi, "&");
+		}
+		return str;
 	}
 });
-
 
 })(jQuery,window,document);
